@@ -1,0 +1,64 @@
+version: '3'
+
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    networks:
+      - app-network
+
+  node1:
+    build: .
+    container_name: nodejs-queue-node1
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+    environment:
+      NODE_ENV: development
+      servidor: node1
+    command: npm run dev
+    depends_on:
+      rabbitmq:
+        condition: service_completed_successfully
+    networks:
+      - app-network
+
+  node2:
+    build: .
+    container_name: nodejs-queue-node2
+    ports:
+      - "3001:3000"
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+    environment:
+      NODE_ENV: development
+      servidor: node2
+    command: npm run dev
+    depends_on:
+      rabbitmq:
+        condition: service_completed_successfully
+    networks:
+      - app-network
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    ports:
+      - "80:80"
+    volumes:
+      - .:/usr/nginx
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
