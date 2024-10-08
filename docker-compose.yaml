@@ -1,18 +1,4 @@
-version: '3'
-
 services:
-  rabbitmq:
-    image: rabbitmq:3-management
-    container_name: rabbitmq
-    ports:
-      - "5672:5672"
-      - "15672:15672"
-    environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
-    networks:
-      - app-network
-
   node1:
     build: .
     container_name: nodejs-queue-node1
@@ -25,9 +11,6 @@ services:
       NODE_ENV: development
       servidor: node1
     command: npm run dev
-    depends_on:
-      rabbitmq:
-        condition: service_completed_successfully
     networks:
       - app-network
 
@@ -43,21 +26,25 @@ services:
       NODE_ENV: development
       servidor: node2
     command: npm run dev
-    depends_on:
-      rabbitmq:
-        condition: service_completed_successfully
     networks:
       - app-network
 
   nginx:
-    image: nginx:latest
-    container_name: nginx
+    build:
+      dockerfile: dockerfile
+      context: ./nginx
+    container_name: nodejs-queue-nginx
     ports:
       - "80:80"
     volumes:
       - .:/usr/nginx
     networks:
       - app-network
+    depends_on:
+      node1:
+        condition: service_completed_successfully
+      node2:
+        condition: service_completed_successfully
 
 networks:
   app-network:
